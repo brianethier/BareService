@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,15 +30,18 @@ public class HttpService extends HttpServlet
 {
     private static final long serialVersionUID = 3170923521742307475L;
 
-    private final ServiceMethod[] get;
-    private final ServiceMethod[] post;
-    private final ServiceMethod[] put;
-    private final ServiceMethod[] delete;
-    private final ServiceMethod[] head;
-    private final ServiceMethod[] options;
-    private final ServiceMethod[] trace;
+    private ServiceMethod[] get;
+    private ServiceMethod[] post;
+    private ServiceMethod[] put;
+    private ServiceMethod[] delete;
+    private ServiceMethod[] head;
+    private ServiceMethod[] options;
+    private ServiceMethod[] trace;
     
+    @Override
+    public void init(ServletConfig config) throws ServletException
     {
+        super.init(config);
         get = loadMethods(GET.class);
         post = loadMethods(POST.class);
         put = loadMethods(PUT.class);
