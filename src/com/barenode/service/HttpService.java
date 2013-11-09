@@ -116,7 +116,7 @@ public class HttpService extends HttpServlet
         }
         catch(IllegalAccessException e)
         {
-            String message = String.format("'%s' maps to a method that can't be accessed!", pathInfo);
+            String message = String.format("'%s' maps to a method that can't be accessed! Make sure all service methods are declared public.", pathInfo);
             log(message, e);
             response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
         }
