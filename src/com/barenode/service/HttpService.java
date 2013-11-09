@@ -93,41 +93,42 @@ public class HttpService extends HttpServlet
         processRequest(trace, request, response);
     }
 
-    private void processRequest(ServiceMethod[] methods, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    private final void processRequest(ServiceMethod[] methods, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        String pathInfo = request.getPathInfo() == null ? "" : request.getPathInfo();
         try
         {
-            String[] path = ServiceUtils.splitPath(request.getPathInfo());
+            String[] path = ServiceUtils.splitPath(pathInfo);
             ServiceMethod method = findMatch(methods, path);
             method.invoke(this, request, response, path);
         }
         catch(MethodNotFoundException e)
         {
-            String message = request.getPathInfo() + " didn't match any of the declared service methods!";
+            String message = String.format("'%s' didn't match any of the declared service methods!", pathInfo);
             log(message, e);
             response.sendError(HttpServletResponse.SC_NOT_FOUND, message);
         }
         catch(IllegalArgumentException e)
         {
-            String message = request.getPathInfo() + " contains invalid sections for the declared parameters!";
+            String message = String.format("'%s' contains invalid sections for the declared parameters!", pathInfo);
             log(message, e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, message);
         }
         catch(IllegalAccessException e)
         {
-            String message = request.getPathInfo() + " maps to a method that can't be accessed!";
+            String message = String.format("'%s' maps to a method that can't be accessed!", pathInfo);
             log(message, e);
             response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
         }
         catch(InvocationTargetException e)
         {
-            String message = request.getPathInfo() + " maps to a method that could not be invoked!";
+            String message = String.format("'%s' maps to a method that could not be invoked!", pathInfo);
             log(message, e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, message);
         }
     }
     
-    public ServiceMethod findMatch(ServiceMethod[] methods, String[] path) throws MethodNotFoundException
+    private final ServiceMethod findMatch(ServiceMethod[] methods, String[] path) throws MethodNotFoundException
     {
         for(ServiceMethod method : methods)
             if(method.matches(path))
@@ -136,7 +137,7 @@ public class HttpService extends HttpServlet
         throw new MethodNotFoundException();
     }
 
-    private ServiceMethod[] loadMethods(Class<? extends Annotation> annotationClass)
+    private final ServiceMethod[] loadMethods(Class<? extends Annotation> annotationClass)
     {
         List<ServiceMethod> methods = new ArrayList<ServiceMethod>();
         for(Method declaredMethod : getClass().getDeclaredMethods())

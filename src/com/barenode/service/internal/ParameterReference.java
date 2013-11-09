@@ -31,7 +31,7 @@ public class ParameterReference
         return parameter;
     }
     
-    public Object create(String[] path)
+    public Object toObject(String[] path)
     {
         return parameter.toObject(path[index]);
     }   
