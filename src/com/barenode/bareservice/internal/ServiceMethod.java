@@ -1,4 +1,4 @@
-package com.barenode.service.internal;
+package com.barenode.bareservice.internal;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -11,13 +11,13 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.barenode.service.HttpService;
-import com.barenode.service.InvalidParameterException;
-import com.barenode.service.internal.ParameterFactory.Parameter;
+import com.barenode.bareservice.RestServlet;
+import com.barenode.bareservice.ServiceUtils;
+import com.barenode.bareservice.internal.ParameterFactory.Parameter;
 
 
-public class ServiceMethod
-{
+public class ServiceMethod {
+	
     public static final Pattern SECTION_PATTERN = Pattern.compile("^\\w+$");
     public static final Pattern PARAMETER_PATTERN = Pattern.compile("^" + Pattern.quote("{") + "\\w+" + Pattern.quote("}") + "$");
 
@@ -27,42 +27,35 @@ public class ServiceMethod
     private final ParameterReference[] references;
 
     
-    public ServiceMethod(Method method, Annotation annotation) throws InvalidParameterException
-    {
+    public ServiceMethod(Method method, Annotation annotation) throws InvalidParameterException {
         this.method = method;
         this.annotation = annotation;
-        this.path = ServiceUtils.getPath(annotation);
+        this.path = ServiceUtils.getSplitPath(annotation);
         this.references = createReferences(path, method.getParameterTypes()); 
     }
 
     
-    public Annotation getAnnotation()
-    {
+    public Annotation getAnnotation() {
         return annotation;
     }
 
-    public String[] getPath()
-    {
+    public String[] getPath() {
         return path;
     }
 
-    public boolean isPathEmpty()
-    {
+    public boolean isPathEmpty() {
         return path.length == 0;
     }
     
-    public String getName()
-    {
+    public String getName() {
         return method.getName();
     }
 
-    public boolean matches(String[] requestPath)
-    {
+    public boolean matches(String[] requestPath) {
         if(requestPath == null || path.length != requestPath.length)
             return false;
 
-        for(int i = 0; i < path.length; i++)
-        {
+        for(int i = 0; i < path.length; i++) {
             if(path[i] == null)
                 continue;
             if(!path[i].equals(requestPath[i]))
@@ -71,8 +64,7 @@ public class ServiceMethod
         return true;
     }
 
-    public void invoke(HttpService service, HttpServletRequest request, HttpServletResponse response, String[] requestPath) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException
-    {
+    public void invoke(RestServlet service, HttpServletRequest request, HttpServletResponse response, String[] requestPath) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         Object[] arguments = new Object[references.length + 2];
         arguments[0] = request;
         arguments[1] = response;
@@ -82,20 +74,17 @@ public class ServiceMethod
     }
     
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Arrays.asList(path).hashCode();
     }
 
     @Override
-    public boolean equals(Object object)
-    {
+    public boolean equals(Object object) {
         if(object == null)
             return false;
         if(object == this)
             return true;
-        if(object instanceof ServiceMethod)
-        {
+        if(object instanceof ServiceMethod) {
             ServiceMethod method = (ServiceMethod) object;
             return Arrays.equals(path, method.path);
         }
@@ -103,13 +92,11 @@ public class ServiceMethod
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getName();
     }
     
-    private final ParameterReference[] createReferences(String[] path, Class<?>[] types) throws InvalidParameterException
-    {
+    private final ParameterReference[] createReferences(String[] path, Class<?>[] types) throws InvalidParameterException {
         Iterator<Class<?>> iterator = Arrays.asList(types).iterator();
         if(!iterator.hasNext() || !iterator.next().isAssignableFrom(HttpServletRequest.class))
             throw new InvalidParameterException("First parameter must be of type: " + HttpServletRequest.class.getName());
@@ -117,13 +104,11 @@ public class ServiceMethod
             throw new InvalidParameterException("Second parameter must be of type: " + HttpServletResponse.class.getName());
 
         ArrayList<ParameterReference> referenceList = new ArrayList<ParameterReference>();
-        for(int i = 0; i < path.length; i++)
-        {
+        for(int i = 0; i < path.length; i++) {
             String section = path[i];
             if(SECTION_PATTERN.matcher(section).matches())
                 continue;
-            else if(PARAMETER_PATTERN.matcher(section).matches())
-            {
+            else if(PARAMETER_PATTERN.matcher(section).matches()) {
                 String name = section.substring(1, section.length() - 1);
                 if(!iterator.hasNext())
                     throw new InvalidParameterException(name + " doesn't have a matching parameter type!");

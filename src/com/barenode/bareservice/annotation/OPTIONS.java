@@ -1,11 +1,10 @@
-package com.barenode.service.annotation;
+package com.barenode.bareservice.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface OPTIONS
-{
+public @interface OPTIONS {
     String value() default "";
 }
