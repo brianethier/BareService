@@ -1,4 +1,4 @@
-package com.barenode.bareservice;
+package com.barenode.bareservice.internal;
 
 import java.lang.annotation.Annotation;
 
@@ -11,12 +11,12 @@ import com.barenode.bareservice.annotation.PUT;
 import com.barenode.bareservice.annotation.TRACE;
 
 
-public class ServiceUtils {
+public class PathUtils {
 	
     public static final String PATH_SEPARATOR = "/";
 
     
-    private ServiceUtils() {}
+    private PathUtils() {}
 
     
     public static String[] splitPath(String path) {

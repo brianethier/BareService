@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +38,8 @@ import com.barenode.bareservice.annotation.POST;
 import com.barenode.bareservice.annotation.PUT;
 import com.barenode.bareservice.annotation.TRACE;
 import com.barenode.bareservice.internal.InvalidParameterException;
-import com.barenode.bareservice.internal.MethodNotFoundException;
+import com.barenode.bareservice.internal.InvalidServiceMethodException;
+import com.barenode.bareservice.internal.PathUtils;
 import com.barenode.bareservice.internal.ServiceMethod;
 import com.barenode.bareservice.internal.ServiceMethodComparator;
 
@@ -103,56 +105,57 @@ public class RestServlet extends HttpServlet {
     private final void processRequest(ServiceMethod[] methods, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         String pathInfo = request.getPathInfo() == null ? "" : request.getPathInfo();
         try {
-            String[] path = ServiceUtils.splitPath(pathInfo);
+            String[] path = PathUtils.splitPath(pathInfo);
             ServiceMethod method = findMatch(methods, path);
+            if(method == null) {
+            	String message = String.format("'%s' didn't match any of the declared service methods!", pathInfo);
+                throw new MethodNotFoundException(message);
+            }
             method.invoke(this, request, response, path);
-        }
-        catch(MethodNotFoundException e) {
-            String message = String.format("'%s' didn't match any of the declared service methods!", pathInfo);
-            log(message, e);
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, message);
         }
         catch(IllegalArgumentException e) {
             String message = String.format("'%s' contains invalid sections for the declared parameters!", pathInfo);
-            log(message, e);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, message);
+            throw new MethodInvocationException(message, e);
         }
         catch(IllegalAccessException e) {
             String message = String.format("'%s' maps to a method that can't be accessed! Make sure all service methods are declared public.", pathInfo);
-            log(message, e);
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+            throw new MethodInvocationException(message, e);
         }
         catch(InvocationTargetException e) {
-            String message = String.format("'%s' maps to a method that could not be invoked!", pathInfo);
-            log(message, e);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, message);
+            String message = String.format("Method mapped to the path '%s' threw an exception when being invoked!", pathInfo);
+            throw new MethodInvocationException(message, e.getTargetException());
         }
     }
     
-    private final ServiceMethod findMatch(ServiceMethod[] methods, String[] path) throws MethodNotFoundException {
+    private final ServiceMethod findMatch(ServiceMethod[] methods, String[] path) {
         for(ServiceMethod method : methods)
             if(method.matches(path))
                 return method;
 
-        throw new MethodNotFoundException();
+        return null;
     }
 
-    private final ServiceMethod[] loadMethods(Class<? extends Annotation> annotationClass) {
+    private final ServiceMethod[] loadMethods(Class<? extends Annotation> annotationClass) throws ServletException {
         List<ServiceMethod> methods = new ArrayList<ServiceMethod>();
         for(Method declaredMethod : getClass().getDeclaredMethods()) {
             Annotation annotation = declaredMethod.getAnnotation(annotationClass);
             if(annotation != null) {
+            	if(!Modifier.isPublic(declaredMethod.getModifiers())) {
+                	String message = String.format("Invalid access modifier, must be 'public' for '%s(...)' in class %s!", declaredMethod.getName(), getClass().getName());
+                    throw new InvalidServiceMethodException(message);
+            	}
                 try {
                     ServiceMethod method = new ServiceMethod(declaredMethod, annotation);
                     if(methods.contains(method)) {
                         ServiceMethod duplicate = methods.get(methods.indexOf(method));
-                        log(String.format("Invalid service annotation! Duplicate annotation on \"%s(...)\" same as \"%s(...)\"!", declaredMethod.getName(), duplicate.getName()));
+                        String message = String.format("Duplicate annotation on \"%s(...)\" same as \"%s(...)\"!", declaredMethod.getName(), duplicate.getName());
+                        throw new InvalidServiceMethodException(message);
                     }
-                    else 
-                        methods.add(method);
+                    methods.add(method);
                 }
                 catch(InvalidParameterException e) {
-                    log(String.format("Invalid service annotation for '%s(...)' in class %s!", declaredMethod.getName(), getClass().getName()), e);
+                	String message = String.format("Invalid parameter for '%s(...)' in class %s!", declaredMethod.getName(), getClass().getName());
+                    throw new InvalidServiceMethodException(message, e);
                 }
             }
         }

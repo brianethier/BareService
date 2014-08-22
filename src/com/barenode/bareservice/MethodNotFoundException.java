@@ -1,4 +1,4 @@
-package com.barenode.bareservice.internal;
+package com.barenode.bareservice;
 
 import javax.servlet.ServletException;
 
@@ -13,13 +13,5 @@ public class MethodNotFoundException extends ServletException {
 
     public MethodNotFoundException(String message) {
         super(message);
-    }
-
-    public MethodNotFoundException(String message, Throwable rootCause) {
-        super(message, rootCause);
-    }
-
-    public MethodNotFoundException(Throwable rootCause) {
-        super(rootCause);
     }
 }

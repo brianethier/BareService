@@ -12,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.barenode.bareservice.RestServlet;
-import com.barenode.bareservice.ServiceUtils;
 import com.barenode.bareservice.internal.ParameterFactory.Parameter;
 
 
@@ -30,7 +29,7 @@ public class ServiceMethod {
     public ServiceMethod(Method method, Annotation annotation) throws InvalidParameterException {
         this.method = method;
         this.annotation = annotation;
-        this.path = ServiceUtils.getSplitPath(annotation);
+        this.path = PathUtils.getSplitPath(annotation);
         this.references = createReferences(path, method.getParameterTypes()); 
     }
 
