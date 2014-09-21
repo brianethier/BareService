@@ -20,61 +20,67 @@ public class ServiceMethod {
     public static final Pattern SECTION_PATTERN = Pattern.compile("^\\w+$");
     public static final Pattern PARAMETER_PATTERN = Pattern.compile("^" + Pattern.quote("{") + "\\w+" + Pattern.quote("}") + "$");
 
-    private final Method method;
-    private final Annotation annotation;
-    private final String path[];
-    private final ParameterReference[] references;
+    private final Method mMethod;
+    private final boolean mValueReturned;
+    private final Annotation mAnnotation;
+    private final String mPath[];
+    private final ParameterReference[] mReferences;
 
     
     public ServiceMethod(Method method, Annotation annotation) throws InvalidParameterException {
-        this.method = method;
-        this.annotation = annotation;
-        this.path = PathUtils.getSplitPath(annotation);
-        this.references = createReferences(path, method.getParameterTypes()); 
+        mMethod = method;
+        mValueReturned = !method.getReturnType().equals(Void.TYPE);
+        mAnnotation = annotation;
+        mPath = PathUtils.getSplitPath(annotation);
+        mReferences = createReferences(mPath, method.getParameterTypes()); 
     }
 
     
+    public boolean isValueReturned() {
+        return mValueReturned;
+    }
+    
     public Annotation getAnnotation() {
-        return annotation;
+        return mAnnotation;
     }
 
     public String[] getPath() {
-        return path;
+        return mPath;
     }
 
     public boolean isPathEmpty() {
-        return path.length == 0;
+        return mPath.length == 0;
     }
     
     public String getName() {
-        return method.getName();
+        return mMethod.getName();
     }
 
     public boolean matches(String[] requestPath) {
-        if(requestPath == null || path.length != requestPath.length)
+        if(requestPath == null || mPath.length != requestPath.length)
             return false;
 
-        for(int i = 0; i < path.length; i++) {
-            if(path[i] == null)
+        for(int i = 0; i < mPath.length; i++) {
+            if(mPath[i] == null)
                 continue;
-            if(!path[i].equals(requestPath[i]))
+            if(!mPath[i].equals(requestPath[i]))
                 return false;
         }
         return true;
     }
 
-    public void invoke(RestServlet service, HttpServletRequest request, HttpServletResponse response, String[] requestPath) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-        Object[] arguments = new Object[references.length + 2];
+    public Object invoke(RestServlet service, HttpServletRequest request, HttpServletResponse response, String[] requestPath) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+        Object[] arguments = new Object[mReferences.length + 2];
         arguments[0] = request;
         arguments[1] = response;
-        for(int i = 0; i < references.length; i++)
-            arguments[i + 2] = references[i].toObject(requestPath);
-        method.invoke(service, arguments);
+        for(int i = 0; i < mReferences.length; i++)
+            arguments[i + 2] = mReferences[i].toObject(requestPath);
+        return mMethod.invoke(service, arguments);
     }
     
     @Override
     public int hashCode() {
-        return Arrays.asList(path).hashCode();
+        return Arrays.asList(mPath).hashCode();
     }
 
     @Override
@@ -85,7 +91,7 @@ public class ServiceMethod {
             return true;
         if(object instanceof ServiceMethod) {
             ServiceMethod method = (ServiceMethod) object;
-            return Arrays.equals(path, method.path);
+            return Arrays.equals(mPath, method.mPath);
         }
         return false;
     }
