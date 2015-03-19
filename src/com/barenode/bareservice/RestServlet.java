@@ -36,6 +36,7 @@ import com.barenode.bareservice.annotation.HEAD;
 import com.barenode.bareservice.annotation.OPTIONS;
 import com.barenode.bareservice.annotation.POST;
 import com.barenode.bareservice.annotation.PUT;
+import com.barenode.bareservice.annotation.ServiceExceptionCallback;
 import com.barenode.bareservice.annotation.TRACE;
 import com.barenode.bareservice.annotation.ValueReturnedCallback;
 import com.barenode.bareservice.internal.InvalidClassAnnotationException;
@@ -50,7 +51,11 @@ import com.barenode.bareservice.internal.ServiceMethodComparator;
 public class RestServlet extends HttpServlet {
     
     public interface OnValueReturnedCallback {
-        public void onValueReturned(HttpServletResponse response, Object value) throws IOException;
+        public void onValueReturned(HttpServletRequest request, HttpServletResponse response, Object value) throws IOException;
+    }
+    
+    public interface OnServiceExceptionCallback {
+        public boolean onServiceException(HttpServletRequest request, HttpServletResponse response, Throwable throwable) throws IOException;
     }
 
     private ServiceMethod[] mGet;
@@ -61,6 +66,7 @@ public class RestServlet extends HttpServlet {
     private ServiceMethod[] mOptions;
     private ServiceMethod[] mTrace;
     private OnValueReturnedCallback mValueReturnedCallback;
+    private OnServiceExceptionCallback mServiceExceptionCallback;
     
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -73,6 +79,7 @@ public class RestServlet extends HttpServlet {
         mOptions = loadMethods(OPTIONS.class);
         mTrace = loadMethods(TRACE.class);
         mValueReturnedCallback = loadValueReturnedCallback();
+        mServiceExceptionCallback = loadServiceExceptionCallback();
     }
 
     @Override
@@ -110,10 +117,17 @@ public class RestServlet extends HttpServlet {
         processRequest(mTrace, request, response);
     }
     
-    protected void onValueReturned(HttpServletResponse response, Object value) throws IOException {
+    protected void onValueReturned(HttpServletRequest request, HttpServletResponse response, Object value) throws IOException {
         if(mValueReturnedCallback != null) {
-            mValueReturnedCallback.onValueReturned(response, value);
+            mValueReturnedCallback.onValueReturned(request, response, value);
         }
+    }
+    
+    protected boolean onServiceException(HttpServletRequest request, HttpServletResponse response, Throwable throwable) throws IOException {
+        if(mServiceExceptionCallback != null) {
+            return mServiceExceptionCallback.onServiceException(request, response, throwable);
+        }
+    	return false;
     }
 
     private final void processRequest(ServiceMethod[] methods, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
@@ -127,7 +141,7 @@ public class RestServlet extends HttpServlet {
             }
             Object value = method.invoke(this, request, response, path);
             if(method.isValueReturned()) {
-                onValueReturned(response, value);
+                onValueReturned(request, response, value);
             }
         }
         catch(IllegalArgumentException e) {
@@ -138,12 +152,19 @@ public class RestServlet extends HttpServlet {
             String message = String.format("'%s' maps to a method that can't be accessed! Make sure all service methods are declared public.", pathInfo);
             throw new MethodInvocationException(message, e);
         }
-        catch(InvocationTargetException e) {
-            if(e.getTargetException() instanceof RuntimeException) {
-                throw (RuntimeException) e.getTargetException();
+        catch(MethodNotFoundException e) {
+            if(!onServiceException(request, response, e)) {
+            	throw e;
             }
-            String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
-            throw new MethodInvocationException(message, e.getTargetException());
+        }
+        catch(InvocationTargetException e) {
+            if(!onServiceException(request, response, e.getTargetException())) {
+	            if(e.getTargetException() instanceof RuntimeException) {
+	                throw (RuntimeException) e.getTargetException();
+	            }
+	            String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
+	            throw new MethodInvocationException(message, e.getTargetException());
+            }
         }
     }
     
@@ -164,6 +185,19 @@ public class RestServlet extends HttpServlet {
             throw new InvalidClassAnnotationException(message, e);
         } catch (IllegalAccessException e) {
             String message = String.format("Invalid class annotation in class %s. Make sure the provided value is a Class that implements OnValueReturnedCallback!", getClass().getName());
+            throw new InvalidClassAnnotationException(message, e);
+        }
+    }
+    
+    private final OnServiceExceptionCallback loadServiceExceptionCallback() throws InvalidClassAnnotationException {
+        try {
+        	ServiceExceptionCallback annotation = getClass().getAnnotation(ServiceExceptionCallback.class);
+            return annotation == null || annotation.value() == null ? null : annotation.value().newInstance();
+        } catch (InstantiationException e) {
+            String message = String.format("Invalid class annotation in class %s. Make sure the provided value is a Class that implements OnServiceExceptionCallback!", getClass().getName());
+            throw new InvalidClassAnnotationException(message, e);
+        } catch (IllegalAccessException e) {
+            String message = String.format("Invalid class annotation in class %s. Make sure the provided value is a Class that implements OnServiceExceptionCallback!", getClass().getName());
             throw new InvalidClassAnnotationException(message, e);
         }
     }
