@@ -1,17 +1,13 @@
 package ca.barelabs.bareservice.internal;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import ca.barelabs.bareservice.RestServlet;
+import ca.barelabs.bareservice.RestClient;
 import ca.barelabs.bareservice.internal.ParameterFactory.Parameter;
 
 
@@ -23,18 +19,24 @@ public class ServiceMethod {
     private final Method mMethod;
     private final boolean mValueReturned;
     private final Annotation mAnnotation;
+    private final boolean mGuestAccess;
     private final String mPath[];
     private final ParameterReference[] mReferences;
 
     
-    public ServiceMethod(Method method, Annotation annotation) throws InvalidParameterException {
+    public ServiceMethod(Method method, Annotation annotation, boolean guestAccess) throws InvalidParameterException {
         mMethod = method;
         mValueReturned = !method.getReturnType().equals(Void.TYPE);
         mAnnotation = annotation;
+        mGuestAccess = guestAccess;
         mPath = PathUtils.getSplitPath(annotation);
         mReferences = createReferences(mPath, method.getParameterTypes()); 
     }
 
+    
+    public Method getMethod() {
+        return mMethod;
+    }
     
     public boolean isValueReturned() {
         return mValueReturned;
@@ -42,6 +44,10 @@ public class ServiceMethod {
     
     public Annotation getAnnotation() {
         return mAnnotation;
+    }
+    
+    public boolean isGuestAccess() {
+        return mGuestAccess;
     }
 
     public String[] getPath() {
@@ -69,13 +75,13 @@ public class ServiceMethod {
         return true;
     }
 
-    public Object invoke(RestServlet service, HttpServletRequest request, HttpServletResponse response, String[] requestPath) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-        Object[] arguments = new Object[mReferences.length + 2];
-        arguments[0] = request;
-        arguments[1] = response;
-        for(int i = 0; i < mReferences.length; i++)
-            arguments[i + 2] = mReferences[i].toObject(requestPath);
-        return mMethod.invoke(service, arguments);
+    public Object[] createArguments(RestClient client, String[] requestPath) {
+        Object[] arguments = new Object[mReferences.length + 1];
+        arguments[0] = client;
+        for(int i = 0; i < mReferences.length; i++) {
+            arguments[i + 1] = mReferences[i].toObject(requestPath);
+        }
+        return arguments;
     }
     
     @Override
@@ -103,11 +109,9 @@ public class ServiceMethod {
     
     private final ParameterReference[] createReferences(String[] path, Class<?>[] types) throws InvalidParameterException {
         Iterator<Class<?>> iterator = Arrays.asList(types).iterator();
-        if(!iterator.hasNext() || !iterator.next().isAssignableFrom(HttpServletRequest.class))
-            throw new InvalidParameterException("First parameter must be of type: " + HttpServletRequest.class.getName());
-        if(!iterator.hasNext() || !iterator.next().isAssignableFrom(HttpServletResponse.class))
-            throw new InvalidParameterException("Second parameter must be of type: " + HttpServletResponse.class.getName());
-
+        if (!iterator.hasNext() || !RestClient.class.isAssignableFrom(iterator.next())) {
+            throw new InvalidParameterException("First parameter must be of type: " + RestClient.class.getName());
+        }
         ArrayList<ParameterReference> referenceList = new ArrayList<ParameterReference>();
         for(int i = 0; i < path.length; i++) {
             String section = path[i];
