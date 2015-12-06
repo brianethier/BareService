@@ -40,10 +40,10 @@ public abstract class RestClient {
         return mResponse;
     }
     
-    public abstract void onConnected(boolean isGuest) throws ServletException, IOException;
+    public abstract void onConnected(boolean isGuest) throws Exception;
     
-    public abstract void onValueReturned(Object value) throws IOException;
+    public abstract void onValueReturned(Object value) throws Exception;
     
-    public abstract boolean onServiceException(Throwable throwable) throws IOException;
+    public abstract boolean onServiceException(Throwable throwable) throws ServletException, IOException;
 
 }

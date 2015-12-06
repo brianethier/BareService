@@ -132,15 +132,13 @@ public class RestServlet extends HttpServlet {
             throw new MethodInvocationException(message, e);
         } catch (InvocationTargetException e) {
             if (!client.onServiceException(e.getTargetException())) {
-	            if (e.getTargetException() instanceof RuntimeException) {
-	                throw (RuntimeException) e.getTargetException();
-	            }
 	            String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
 	            throw new MethodInvocationException(message, e.getTargetException());
             }
         } catch (Exception e) {
             if(!client.onServiceException(e)) {
-                throw e;
+                String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
+                throw new MethodInvocationException(message, e);
             }
         }
     }
