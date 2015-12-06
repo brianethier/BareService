@@ -40,6 +40,43 @@ public abstract class RestClient {
         return mResponse;
     }
     
+    public String getStringParam(String key, String defValue) {
+        String value = mRequest.getParameter(key);
+        return value == null ? defValue : value;
+    }
+    
+    public boolean getBooleanParam(String key, boolean defValue) {
+        String value = mRequest.getParameter(key);
+        return value == null ? defValue : Boolean.parseBoolean(value);
+    }
+    
+    public float getFloatParam(String key, float defValue) {
+        try {
+            String value = mRequest.getParameter(key);
+            return value == null ? defValue : Float.parseFloat(value);
+        } catch (NumberFormatException e) {
+            return defValue;
+        }
+    }
+    
+    public int getIntParam(String key, int defValue) {
+        try {
+            String value = mRequest.getParameter(key);
+            return value == null ? defValue : Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return defValue;
+        }
+    }
+    
+    public long getLongParam(String key, long defValue) {
+        try {
+            String value = mRequest.getParameter(key);
+            return value == null ? defValue : Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return defValue;
+        }
+    }
+    
     public abstract void onConnected(boolean isGuest) throws Exception;
     
     public abstract void onValueReturned(Object value) throws Exception;
