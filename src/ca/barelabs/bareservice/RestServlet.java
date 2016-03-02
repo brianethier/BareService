@@ -115,8 +115,7 @@ public class RestServlet extends HttpServlet {
             String[] path = PathUtils.splitPath(pathInfo);
             ServiceMethod method = findMatch(methods, path);
             if (method == null) {
-            	String message = String.format("'%s' didn't match any of the declared service methods!", pathInfo);
-                throw new MethodNotFoundException(message);
+                throw new MethodNotFoundException(request.getRequestURI());
             }
             client.onConnected(method.isGuestAccess());
             Object[] arguments = method.createArguments(client, path);
@@ -136,7 +135,7 @@ public class RestServlet extends HttpServlet {
 	            throw new MethodInvocationException(message, e.getTargetException());
             }
         } catch (Exception e) {
-            if(!client.onServiceException(e)) {
+            if (!client.onServiceException(e)) {
                 String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
                 throw new MethodInvocationException(message, e);
             }
