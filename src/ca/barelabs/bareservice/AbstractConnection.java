@@ -15,21 +15,43 @@
  */
 package ca.barelabs.bareservice;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import ca.barelabs.bareservice.internal.GZipServletResponseWrapper;
+
 
 public abstract class AbstractConnection {
 
-    private HttpServletRequest mRequest;
-    private HttpServletResponse mResponse;    
+    public static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
+    public static final String HEADER_CONTENT_ENCODING = "Content-Encoding";    
+    public static final String ENCODING_GZIP = "gzip";
 
-    public final void init(HttpServletRequest request, HttpServletResponse response) {
-        mRequest = request;
-        mResponse = response;
+    private HttpServletRequest mRequest;
+    private HttpServletResponse mResponse;
+
+
+    void init(HttpServletRequest request, HttpServletResponse response) {
+    	String acceptEncoding = request.getHeader(HEADER_ACCEPT_ENCODING);
+    	if (acceptEncoding != null && acceptEncoding.indexOf(ENCODING_GZIP) != -1) {
+    		response.setHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP);
+            mRequest = request;
+            mResponse = new GZipServletResponseWrapper(response);
+    	} else {
+            mRequest = request;
+            mResponse = response;
+    	}
+    }
+
+    void close() throws IOException {
+		onClose();
+        if (mResponse instanceof Closeable) {
+        	((Closeable) mResponse).close();
+        }
     }
 
     public HttpServletRequest getRequest() {
@@ -77,10 +99,11 @@ public abstract class AbstractConnection {
         }
     }
     
-    public abstract void onConnected(boolean isGuest) throws Exception;
+    public abstract void onConnected(boolean isGuest) throws ServletException, IOException;
     
-    public abstract void onValueReturned(Object value) throws Exception;
+    public abstract void onValueReturned(Object value) throws IOException;
     
-    public abstract boolean onServiceException(Throwable throwable) throws ServletException, IOException;
-
+    public abstract void onClose() throws IOException;
+    
+    public abstract boolean onServiceException(Throwable throwable) throws IOException;
 }

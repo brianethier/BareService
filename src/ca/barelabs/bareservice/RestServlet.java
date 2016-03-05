@@ -109,7 +109,7 @@ public class RestServlet extends HttpServlet {
 
     private final void processRequest(ServiceMethod[] methods, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         AbstractConnection connection = createConnectionInstance();
-        connection.init(request, response);
+		connection.init(request, response);
         String pathInfo = request.getPathInfo() == null ? "" : request.getPathInfo();
         try {
             String[] path = PathUtils.splitPath(pathInfo);
@@ -123,6 +123,7 @@ public class RestServlet extends HttpServlet {
             if (method.isValueReturned()) {
             	connection.onValueReturned(value);
             }
+            connection.close();
         } catch (IllegalArgumentException e) {
             String message = String.format("'%s' contains invalid sections for the declared parameters!", pathInfo);
             throw new MethodInvocationException(message, e);
@@ -130,12 +131,12 @@ public class RestServlet extends HttpServlet {
             String message = String.format("'%s' maps to a method that can't be accessed! Make sure all service methods are declared public.", pathInfo);
             throw new MethodInvocationException(message, e);
         } catch (InvocationTargetException e) {
-            if (!connection.onServiceException(e.getTargetException())) {
+            if (response.isCommitted() || !connection.onServiceException(e.getTargetException())) {
 	            String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
 	            throw new MethodInvocationException(message, e.getTargetException());
             }
         } catch (Exception e) {
-            if (!connection.onServiceException(e)) {
+            if (response.isCommitted() || !connection.onServiceException(e)) {
                 String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
                 throw new MethodInvocationException(message, e);
             }
