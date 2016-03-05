@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-import ca.barelabs.bareservice.RestClient;
+import ca.barelabs.bareservice.AbstractConnection;
 import ca.barelabs.bareservice.internal.ParameterFactory.Parameter;
 
 
@@ -75,9 +75,9 @@ public class ServiceMethod {
         return true;
     }
 
-    public Object[] createArguments(RestClient client, String[] requestPath) {
+    public Object[] createArguments(AbstractConnection connection, String[] requestPath) {
         Object[] arguments = new Object[mReferences.length + 1];
-        arguments[0] = client;
+        arguments[0] = connection;
         for(int i = 0; i < mReferences.length; i++) {
             arguments[i + 1] = mReferences[i].toObject(requestPath);
         }
@@ -109,8 +109,8 @@ public class ServiceMethod {
     
     private final ParameterReference[] createReferences(String[] path, Class<?>[] types) throws InvalidParameterException {
         Iterator<Class<?>> iterator = Arrays.asList(types).iterator();
-        if (!iterator.hasNext() || !RestClient.class.isAssignableFrom(iterator.next())) {
-            throw new InvalidParameterException("First parameter must be of type: " + RestClient.class.getName());
+        if (!iterator.hasNext() || !AbstractConnection.class.isAssignableFrom(iterator.next())) {
+            throw new InvalidParameterException("First parameter must be of type: " + AbstractConnection.class.getName());
         }
         ArrayList<ParameterReference> referenceList = new ArrayList<ParameterReference>();
         for(int i = 0; i < path.length; i++) {

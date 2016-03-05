@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 
-public abstract class RestClient {
+public abstract class AbstractConnection {
 
     private HttpServletRequest mRequest;
     private HttpServletResponse mResponse;    

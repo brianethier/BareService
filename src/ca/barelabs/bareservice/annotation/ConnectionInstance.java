@@ -3,9 +3,9 @@ package ca.barelabs.bareservice.annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import ca.barelabs.bareservice.RestClient;
+import ca.barelabs.bareservice.AbstractConnection;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ClientInstance {
-    Class<? extends RestClient> value();
+public @interface ConnectionInstance {
+    Class<? extends AbstractConnection> value();
 }
