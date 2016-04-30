@@ -17,6 +17,9 @@ package ca.barelabs.bareservice;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -60,6 +63,11 @@ public abstract class AbstractConnection {
 
     public HttpServletResponse getResponse() {
         return mResponse;
+    }
+    
+    public List<String> getStringParamValues(String key) {
+    	String[] values = mRequest.getParameterValues(key);
+        return values == null ? new ArrayList<String>() : Arrays.asList(values);
     }
     
     public String getStringParam(String key, String defValue) {
