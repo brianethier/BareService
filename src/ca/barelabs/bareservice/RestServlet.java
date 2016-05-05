@@ -123,7 +123,6 @@ public class RestServlet extends HttpServlet {
             if (method.isValueReturned()) {
             	connection.onValueReturned(value);
             }
-            connection.close();
         } catch (IllegalArgumentException e) {
             String message = String.format("'%s' contains invalid sections for the declared parameters!", pathInfo);
             throw new MethodInvocationException(message, e);
@@ -140,6 +139,8 @@ public class RestServlet extends HttpServlet {
                 String message = String.format("Method mapped to the path '%s' threw an exception while being invoked!", pathInfo);
                 throw new MethodInvocationException(message, e);
             }
+        } finally {
+            connection.close();
         }
     }
     
