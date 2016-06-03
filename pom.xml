@@ -32,10 +32,10 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<groupId>com.google.appengine</groupId>
-			<artifactId>appengine-maven-plugin</artifactId>
-			<version>1.9.32</version>
-			<type>maven-plugin</type>
+		        <groupId>javax.servlet</groupId>
+		        <artifactId>javax.servlet-api</artifactId>
+		        <version>3.0.1</version>
+		        <scope>provided</scope>
 		</dependency>
 	</dependencies>
 </project>
