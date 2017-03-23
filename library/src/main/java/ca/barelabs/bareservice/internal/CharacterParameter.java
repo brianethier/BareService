@@ -11,6 +11,6 @@ public class CharacterParameter implements Parameter {
         if(value == null || value.length() != 1)
             throw new IllegalArgumentException("Failed to convert '" + value + "' to a Character!");
         
-        return Character.valueOf(value.charAt(0));
+        return value.charAt(0);
     }
 }

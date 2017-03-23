@@ -4,11 +4,11 @@ package ca.barelabs.bareservice.internal;
 public final class ParameterFactory {
     
     public interface Parameter {
-        public Object toObject(String value);
+        Object toObject(String value);
     }
 
     
-    public static final Parameter create(Class<?> type) {
+    public static Parameter create(Class<?> type) {
         if(type.isAssignableFrom(Byte.TYPE) || type.isAssignableFrom(Byte.class))
             return new ByteParameter();
         if(type.isAssignableFrom(Short.TYPE) || type.isAssignableFrom(Short.class))
