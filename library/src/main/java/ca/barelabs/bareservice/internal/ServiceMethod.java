@@ -13,7 +13,7 @@ import ca.barelabs.bareservice.internal.ParameterFactory.Parameter;
 
 public class ServiceMethod {
 	
-    public static final Pattern SECTION_PATTERN = Pattern.compile("^\\w+$");
+    public static final Pattern SECTION_PATTERN = Pattern.compile("^[-_~\\.\\w]+$");
     public static final Pattern PARAMETER_PATTERN = Pattern.compile("^" + Pattern.quote("{") + "\\w+" + Pattern.quote("}") + "$");
 
     private final Method mMethod;
